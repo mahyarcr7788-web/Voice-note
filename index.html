@@ -3,7 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live Pitch Detector</title>
+  <title>Live Pitch Detector – Sing and See Your Notes</title>
+  <meta name="description" content="A free web app that shows the musical note you're singing in real time. Sing into your mic and see your pitch instantly. Perfect for singers and musicians.">
+  <meta name="keywords" content="pitch detector, voice tuner, online tuner, singing app, music pitch analyzer">
+  <meta name="author" content="Your Name">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://yourusername.github.io/live-pitch-detector/">
+  <meta property="og:title" content="Live Pitch Detector – Sing and See Your Notes">
+  <meta property="og:description" content="A free web app that shows the musical note you're singing in real time. Sing into your mic and see your pitch instantly. Perfect for singers and musicians.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourusername.github.io/live-pitch-detector/">
+  <meta property="og:image" content="https://yourusername.github.io/live-pitch-detector/preview.png">
   <style>
     :root{--bg:#0f1724;--card:#0b1220;--accent:#10b981;--muted:#94a3b8;--glass:rgba(255,255,255,0.04)}
     html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
@@ -70,185 +80,21 @@
   </div>
 
   <script>
-  // --- Utilities: frequency <-> note
   const noteStrings = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  function frequencyToNoteNumber(freq){
-    return 12 * (Math.log(freq/440) / Math.log(2)) + 69;
-  }
-  function noteNumberToFrequency(noteNumber){
-    return 440 * Math.pow(2, (noteNumber-69)/12);
-  }
-  function frequencyToNote(freq){
-    const noteNumber = frequencyToNoteNumber(freq);
-    const rounded = Math.round(noteNumber);
-    const noteIndex = (rounded + 120) % 12; // ensure positive
-    const octave = Math.floor(rounded/12) - 1;
-    return {name: noteStrings[noteIndex] + octave, number: rounded, cents: Math.floor((noteNumber - rounded)*100)};
-  }
+  function frequencyToNoteNumber(freq){ return 12 * (Math.log(freq/440) / Math.log(2)) + 69; }
+  function frequencyToNote(freq){ const noteNumber = frequencyToNoteNumber(freq); const rounded = Math.round(noteNumber); const noteIndex = (rounded + 120) % 12; const octave = Math.floor(rounded/12) - 1; return {name: noteStrings[noteIndex] + octave, number: rounded, cents: Math.floor((noteNumber - rounded)*100)}; }
+  function autoCorrelate(buffer, sampleRate){ const SIZE = buffer.length; let rms = 0; for (let i=0;i<SIZE;i++){ rms += buffer[i]*buffer[i]; } rms = Math.sqrt(rms/SIZE); if (rms < 0.01) return -1; let bestOffset=-1,bestCorrelation=0; const correlations=new Array(SIZE).fill(0); for (let offset=0; offset<SIZE/2; offset++){ let corr=0; for (let i=0;i<SIZE/2;i++){ corr += Math.abs(buffer[i]-buffer[i+offset]); } correlations[offset]=1-(corr/(SIZE/2)); if (correlations[offset]>bestCorrelation){ bestCorrelation=correlations[offset]; bestOffset=offset; } } if (bestCorrelation>0.5){ const shift=(correlations[bestOffset+1]-correlations[bestOffset-1])/(2*(2*correlations[bestOffset]-correlations[bestOffset-1]-correlations[bestOffset+1])); const estimatedPeriod=bestOffset+shift; const frequency=sampleRate/estimatedPeriod; return frequency; } return -1; }
 
-  // --- Autocorrelation pitch detection
-  // Based on standard implementation (kept small and robust)
-  function autoCorrelate(buffer, sampleRate){
-    // Find length of buffer
-    const SIZE = buffer.length;
-    let rms = 0;
-    for (let i=0;i<SIZE;i++){ const val = buffer[i]; rms += val*val; }
-    rms = Math.sqrt(rms/SIZE);
-    if (rms < 0.01) return -1; // silence or too quiet
+  let audioContext=null, analyser=null, dataArray=null, sourceNode=null, rafId=null, stream=null;
+  const startBtn=document.getElementById('startBtn'); const stopBtn=document.getElementById('stopBtn'); const noteEl=document.getElementById('note'); const freqEl=document.getElementById('freq'); const centsEl=document.getElementById('cents'); const statusEl=document.getElementById('status'); const needleEl=document.getElementById('needle'); const canvas=document.getElementById('canvas'); const canvasCtx=canvas.getContext('2d');
 
-    let bestOffset = -1;
-    let bestCorrelation = 0;
-    const correlations = new Array(SIZE).fill(0);
-
-    for (let offset = 0; offset < SIZE/2; offset++){
-      let corr = 0;
-      for (let i = 0; i < SIZE/2; i++){
-        corr += Math.abs((buffer[i]) - (buffer[i+offset]));
-      }
-      correlations[offset] = 1 - (corr / (SIZE/2));
-      if (correlations[offset] > bestCorrelation){
-        bestCorrelation = correlations[offset];
-        bestOffset = offset;
-      }
-    }
-
-    if (bestCorrelation > 0.5){
-      // parabolic interpolation for better accuracy
-      const shift = (correlations[bestOffset+1] - correlations[bestOffset-1]) / (2 * (2*correlations[bestOffset] - correlations[bestOffset-1] - correlations[bestOffset+1]));
-      const estimatedPeriod = bestOffset + shift;
-      const frequency = sampleRate/estimatedPeriod;
-      return frequency;
-    }
-    return -1;
-  }
-
-  // --- App state and audio pipeline
-  let audioContext = null;
-  let analyser = null;
-  let dataArray = null;
-  let bufferLength = 2048;
-  let sourceNode = null;
-  let rafId = null;
-  let stream = null;
-
-  const startBtn = document.getElementById('startBtn');
-  const stopBtn = document.getElementById('stopBtn');
-  const noteEl = document.getElementById('note');
-  const freqEl = document.getElementById('freq');
-  const centsEl = document.getElementById('cents');
-  const statusEl = document.getElementById('status');
-  const needleEl = document.getElementById('needle');
-  const canvas = document.getElementById('canvas');
-  const canvasCtx = canvas.getContext('2d');
-
-  function resizeCanvas(){
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-
-  async function start(){
-    if (audioContext) return;
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
-    }catch(e){
-      alert('Could not access microphone: ' + e.message);
-      return;
-    }
-
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
-    const bufferLen = analyser.fftSize;
-    dataArray = new Float32Array(bufferLen);
-
-    sourceNode = audioContext.createMediaStreamSource(stream);
-    sourceNode.connect(analyser);
-
-    statusEl.textContent = 'Status: listening';
-    tick();
-  }
-
-  function stop(){
-    if (rafId) cancelAnimationFrame(rafId);
-    if (sourceNode) sourceNode.disconnect();
-    if (analyser) analyser.disconnect();
-    if (stream){
-      stream.getTracks().forEach(t=>t.stop());
-      stream = null;
-    }
-    if (audioContext){
-      audioContext.close();
-      audioContext = null;
-    }
-    analyser = null;
-    sourceNode = null;
-    dataArray = null;
-    statusEl.textContent = 'Status: stopped';
-    noteEl.textContent = '--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents';
-    needleEl.style.left = '50%';
-    clearCanvas();
-  }
-
-  function drawWave(buffer){
-    const w = canvas.width; const h = canvas.height;
-    canvasCtx.clearRect(0,0,w,h);
-    canvasCtx.lineWidth = 1.5 * devicePixelRatio;
-    canvasCtx.beginPath();
-    const step = Math.floor(buffer.length / w);
-    for (let i=0;i<w;i++){
-      const v = buffer[i*step] || 0;
-      const y = (1 - (v + 1)/2) * h;
-      if (i===0) canvasCtx.moveTo(i,y); else canvasCtx.lineTo(i,y);
-    }
-    canvasCtx.strokeStyle = 'rgba(200,230,240,0.9)';
-    canvasCtx.stroke();
-  }
-  function clearCanvas(){
-    canvasCtx.clearRect(0,0,canvas.width,canvas.height);
-  }
-
-  function tick(){
-    analyser.getFloatTimeDomainData(dataArray);
-    const sampleRate = audioContext.sampleRate;
-    const frequency = autoCorrelate(dataArray, sampleRate);
-    if (frequency !== -1){
-      const note = frequencyToNote(frequency);
-      noteEl.textContent = note.name;
-      freqEl.textContent = frequency.toFixed(1) + ' Hz';
-      centsEl.textContent = (note.cents >= 0 ? '+' : '') + note.cents + ' cents';
-
-      // move needle: -50 to +50 cents -> translate to percent
-      const cents = note.cents;
-      const percent = 50 + (cents/50) * 50; // if +/-50 cents -> 0..100
-      needleEl.style.left = percent + '%';
-    } else {
-      // no pitch found
-      noteEl.textContent = '--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents';
-      needleEl.style.left = '50%';
-    }
-
-    drawWave(dataArray);
-    rafId = requestAnimationFrame(tick);
-  }
-
-  startBtn.addEventListener('click', ()=>{
-    start();
-  });
-  stopBtn.addEventListener('click', ()=>{
-    stop();
-  });
-
-  // Auto-start suggestion for convenience (commented out):
-  // start();
-
-  // Clean up when page hidden
-  document.addEventListener('visibilitychange', ()=>{
-    if (document.hidden) {
-      // optional: stop to free mic
-    }
-  });
+  function resizeCanvas(){ canvas.width=canvas.clientWidth*devicePixelRatio; canvas.height=canvas.clientHeight*devicePixelRatio; } window.addEventListener('resize',resizeCanvas); resizeCanvas();
+  async function start(){ if(audioContext) return; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});}catch(e){ alert('Could not access microphone: '+e.message); return;} audioContext=new (window.AudioContext||window.webkitAudioContext)(); analyser=audioContext.createAnalyser(); analyser.fftSize=2048; dataArray=new Float32Array(analyser.fftSize); sourceNode=audioContext.createMediaStreamSource(stream); sourceNode.connect(analyser); statusEl.textContent='Status: listening'; tick(); }
+  function stop(){ if(rafId) cancelAnimationFrame(rafId); if(sourceNode) sourceNode.disconnect(); if(analyser) analyser.disconnect(); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null;} if(audioContext){ audioContext.close(); audioContext=null;} analyser=null; sourceNode=null; dataArray=null; statusEl.textContent='Status: stopped'; noteEl.textContent='--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents'; needleEl.style.left='50%'; clearCanvas(); }
+  function drawWave(buffer){ const w=canvas.width,h=canvas.height; canvasCtx.clearRect(0,0,w,h); canvasCtx.lineWidth=1.5*devicePixelRatio; canvasCtx.beginPath(); const step=Math.floor(buffer.length/w); for(let i=0;i<w;i++){ const v=buffer[i*step]||0; const y=(1-(v+1)/2)*h; if(i===0) canvasCtx.moveTo(i,y); else canvasCtx.lineTo(i,y);} canvasCtx.strokeStyle='rgba(200,230,240,0.9)'; canvasCtx.stroke(); }
+  function clearCanvas(){ canvasCtx.clearRect(0,0,canvas.width,canvas.height); }
+  function tick(){ analyser.getFloatTimeDomainData(dataArray); const sampleRate=audioContext.sampleRate; const frequency=autoCorrelate(dataArray,sampleRate); if(frequency!==-1){ const note=frequencyToNote(frequency); noteEl.textContent=note.name; freqEl.textContent=frequency.toFixed(1)+' Hz'; centsEl.textContent=(note.cents>=0?'+':'')+note.cents+' cents'; const cents=note.cents; const percent=50+(cents/50)*50; needleEl.style.left=percent+'%'; } else { noteEl.textContent='--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents'; needleEl.style.left='50%'; } drawWave(dataArray); rafId=requestAnimationFrame(tick); }
+  startBtn.addEventListener('click',()=>start()); stopBtn.addEventListener('click',()=>stop());
   </script>
 </body>
 </html>
