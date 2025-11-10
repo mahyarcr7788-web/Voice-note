@@ -3,25 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live Pitch Detector – Sing and See Your Notes</title>
-  <meta name="description" content="A free web app that shows the musical note you're singing in real time. Sing into your mic and see your pitch instantly. Perfect for singers and musicians.">
-  <meta name="keywords" content="pitch detector, voice tuner, online tuner, singing app, music pitch analyzer">
-  <meta name="author" content="Your Name">
+
+  <title>Live Pitch Detector – Online Singing Pitch & Note Analyzer</title>
+  <meta name="description" content="Free real-time pitch detector for singers and musicians. Sing into your microphone and instantly see the musical note, frequency, and how in-tune you are. Works online in any browser.">
+  <meta name="keywords" content="live pitch detector, online tuner, singing tuner, voice pitch analyzer, note detector, real time pitch detector, music tuner app, mic tuner, vocal pitch tool">
+  <meta name="author" content="Mahyar CR">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://yourusername.github.io/live-pitch-detector/">
-  <meta property="og:title" content="Live Pitch Detector – Sing and See Your Notes">
-  <meta property="og:description" content="A free web app that shows the musical note you're singing in real time. Sing into your mic and see your pitch instantly. Perfect for singers and musicians.">
+  <link rel="canonical" href="https://mahyarcr7788-web.github.io/Voice-note/">
+
+  <!-- Open Graph (Facebook, Discord, etc.) -->
+  <meta property="og:title" content="Live Pitch Detector – Sing and See Your Notes in Real Time">
+  <meta property="og:description" content="A free online app that detects your singing pitch instantly. Perfect for singers, vocalists and musicians.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://yourusername.github.io/live-pitch-detector/">
-  <meta property="og:image" content="https://yourusername.github.io/live-pitch-detector/preview.png">
+  <meta property="og:url" content="https://mahyarcr7788-web.github.io/Voice-note/">
+  <meta property="og:image" content="https://mahyarcr7788-web.github.io/Voice-note/preview.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Live Pitch Detector – Sing and See Your Notes">
+  <meta name="twitter:description" content="Sing into your mic and see the note and pitch accuracy live. Free online tuner for singers and musicians.">
+  <meta name="twitter:image" content="https://mahyarcr7788-web.github.io/Voice-note/preview.png">
+
+  <!-- Optional favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
   <style>
     :root{--bg:#0f1724;--card:#0b1220;--accent:#10b981;--muted:#94a3b8;--glass:rgba(255,255,255,0.04)}
-    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
     body{background:linear-gradient(180deg,#071024 0%, #071427 100%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:28px}
     .card{width:760px;max-width:95%;background:var(--card);border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,0.7);padding:22px}
     .row{display:flex;gap:18px;align-items:center}
-    h1{font-size:20px;margin:0 0 6px}
-    p{margin:0;color:var(--muted);font-size:13px}
+    h1{font-size:22px;margin:0 0 6px}
+    p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
     .big{font-size:56px;font-weight:600;letter-spacing:0.02em}
     .freq{font-size:18px;color:#cfeff0}
     .meter{width:100%;height:28px;background:var(--glass);border-radius:8px;position:relative;overflow:hidden}
@@ -32,17 +45,16 @@
     button.primary{background:linear-gradient(90deg,#06b6d4,#7c3aed);border:none}
     .status{font-size:13px;color:var(--muted)}
     .footer{margin-top:14px;font-size:13px;color:var(--muted)}
-    .visualizer{margin-top:16px;height:120px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:8px;padding:6px;display:flex;align-items:center}
+    .visualizer{margin-top:16px;height:120px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:8px;padding:6px;display:flex;align-items:center}
     canvas{width:100%;height:100%;display:block}
-    .notewrap{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
   </style>
 </head>
 <body>
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>
-        <h1>Live Pitch Detector</h1>
-        <p>Sing into your microphone — the app shows the detected note, frequency and cents offset in real time.</p>
+        <h1>Live Pitch Detector – Sing & See Your Note Instantly</h1>
+        <p>This free online pitch detector lets you sing or play an instrument and instantly see the exact musical note, frequency, and tuning accuracy. Ideal for singers, vocal coaches, and musicians who want to practice their pitch in real time.</p>
       </div>
       <div class="controls">
         <button id="startBtn" class="primary">Start</button>
@@ -51,7 +63,7 @@
     </div>
 
     <div style="display:flex;gap:22px;margin-top:18px;align-items:center">
-      <div style="flex:0 0 220px;text-align:center;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)">
+      <div style="flex:0 0 220px;text-align:center;padding:18px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent)">
         <div class="big" id="note">--</div>
         <div class="freq" id="freq">-- Hz</div>
         <div class="cents" id="cents">-- cents</div>
@@ -74,27 +86,25 @@
       </div>
     </div>
 
-    <div style="margin-top:14px;font-size:13px;color:var(--muted)">
-      <strong>How it works:</strong> the app captures audio using the browser microphone, runs a pitch-detection algorithm (autocorrelation), converts frequency to the nearest musical note and shows cents (how sharp/flat you are).
+    <div style="margin-top:16px;font-size:14px;color:var(--muted)">
+      <strong>How it works:</strong> Voice Note uses your browser microphone and a pitch-detection algorithm to calculate the sound frequency, match it to the nearest musical note, and show how sharp or flat you are in real time.
     </div>
   </div>
 
   <script>
-  const noteStrings = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  function frequencyToNoteNumber(freq){ return 12 * (Math.log(freq/440) / Math.log(2)) + 69; }
-  function frequencyToNote(freq){ const noteNumber = frequencyToNoteNumber(freq); const rounded = Math.round(noteNumber); const noteIndex = (rounded + 120) % 12; const octave = Math.floor(rounded/12) - 1; return {name: noteStrings[noteIndex] + octave, number: rounded, cents: Math.floor((noteNumber - rounded)*100)}; }
-  function autoCorrelate(buffer, sampleRate){ const SIZE = buffer.length; let rms = 0; for (let i=0;i<SIZE;i++){ rms += buffer[i]*buffer[i]; } rms = Math.sqrt(rms/SIZE); if (rms < 0.01) return -1; let bestOffset=-1,bestCorrelation=0; const correlations=new Array(SIZE).fill(0); for (let offset=0; offset<SIZE/2; offset++){ let corr=0; for (let i=0;i<SIZE/2;i++){ corr += Math.abs(buffer[i]-buffer[i+offset]); } correlations[offset]=1-(corr/(SIZE/2)); if (correlations[offset]>bestCorrelation){ bestCorrelation=correlations[offset]; bestOffset=offset; } } if (bestCorrelation>0.5){ const shift=(correlations[bestOffset+1]-correlations[bestOffset-1])/(2*(2*correlations[bestOffset]-correlations[bestOffset-1]-correlations[bestOffset+1])); const estimatedPeriod=bestOffset+shift; const frequency=sampleRate/estimatedPeriod; return frequency; } return -1; }
-
-  let audioContext=null, analyser=null, dataArray=null, sourceNode=null, rafId=null, stream=null;
-  const startBtn=document.getElementById('startBtn'); const stopBtn=document.getElementById('stopBtn'); const noteEl=document.getElementById('note'); const freqEl=document.getElementById('freq'); const centsEl=document.getElementById('cents'); const statusEl=document.getElementById('status'); const needleEl=document.getElementById('needle'); const canvas=document.getElementById('canvas'); const canvasCtx=canvas.getContext('2d');
-
-  function resizeCanvas(){ canvas.width=canvas.clientWidth*devicePixelRatio; canvas.height=canvas.clientHeight*devicePixelRatio; } window.addEventListener('resize',resizeCanvas); resizeCanvas();
-  async function start(){ if(audioContext) return; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});}catch(e){ alert('Could not access microphone: '+e.message); return;} audioContext=new (window.AudioContext||window.webkitAudioContext)(); analyser=audioContext.createAnalyser(); analyser.fftSize=2048; dataArray=new Float32Array(analyser.fftSize); sourceNode=audioContext.createMediaStreamSource(stream); sourceNode.connect(analyser); statusEl.textContent='Status: listening'; tick(); }
-  function stop(){ if(rafId) cancelAnimationFrame(rafId); if(sourceNode) sourceNode.disconnect(); if(analyser) analyser.disconnect(); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null;} if(audioContext){ audioContext.close(); audioContext=null;} analyser=null; sourceNode=null; dataArray=null; statusEl.textContent='Status: stopped'; noteEl.textContent='--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents'; needleEl.style.left='50%'; clearCanvas(); }
-  function drawWave(buffer){ const w=canvas.width,h=canvas.height; canvasCtx.clearRect(0,0,w,h); canvasCtx.lineWidth=1.5*devicePixelRatio; canvasCtx.beginPath(); const step=Math.floor(buffer.length/w); for(let i=0;i<w;i++){ const v=buffer[i*step]||0; const y=(1-(v+1)/2)*h; if(i===0) canvasCtx.moveTo(i,y); else canvasCtx.lineTo(i,y);} canvasCtx.strokeStyle='rgba(200,230,240,0.9)'; canvasCtx.stroke(); }
-  function clearCanvas(){ canvasCtx.clearRect(0,0,canvas.width,canvas.height); }
-  function tick(){ analyser.getFloatTimeDomainData(dataArray); const sampleRate=audioContext.sampleRate; const frequency=autoCorrelate(dataArray,sampleRate); if(frequency!==-1){ const note=frequencyToNote(frequency); noteEl.textContent=note.name; freqEl.textContent=frequency.toFixed(1)+' Hz'; centsEl.textContent=(note.cents>=0?'+':'')+note.cents+' cents'; const cents=note.cents; const percent=50+(cents/50)*50; needleEl.style.left=percent+'%'; } else { noteEl.textContent='--'; freqEl.textContent='-- Hz'; centsEl.textContent='-- cents'; needleEl.style.left='50%'; } drawWave(dataArray); rafId=requestAnimationFrame(tick); }
-  startBtn.addEventListener('click',()=>start()); stopBtn.addEventListener('click',()=>stop());
+    /* --- Pitch detection logic (unchanged) --- */
+    const noteStrings=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    function frequencyToNoteNumber(freq){return 12*(Math.log(freq/440)/Math.log(2))+69;}
+    function frequencyToNote(freq){const n=frequencyToNoteNumber(freq);const r=Math.round(n);const i=(r+120)%12;const o=Math.floor(r/12)-1;return{name:noteStrings[i]+o,number:r,cents:Math.floor((n-r)*100)};}
+    function autoCorrelate(buf,sr){const SIZE=buf.length;let rms=0;for(let i=0;i<SIZE;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/SIZE);if(rms<0.01)return-1;let best=-1,bestCorr=0;const corrs=new Array(SIZE).fill(0);for(let off=0;off<SIZE/2;off++){let corr=0;for(let i=0;i<SIZE/2;i++)corr+=Math.abs(buf[i]-buf[i+off]);corrs[off]=1-(corr/(SIZE/2));if(corrs[off]>bestCorr){bestCorr=corrs[off];best=off;}}if(bestCorr>0.5){const shift=(corrs[best+1]-corrs[best-1])/(2*(2*corrs[best]-corrs[best-1]-corrs[best+1]));const period=best+shift;return sr/period;}return-1;}
+    let ctx=null,an=null,data=null,src=null,raf=null,stream=null;
+    const startBtn=document.getElementById('startBtn'),stopBtn=document.getElementById('stopBtn'),noteEl=document.getElementById('note'),freqEl=document.getElementById('freq'),centsEl=document.getElementById('cents'),statusEl=document.getElementById('status'),needle=document.getElementById('needle'),canvas=document.getElementById('canvas'),ctx2d=canvas.getContext('2d');
+    function resizeCanvas(){canvas.width=canvas.clientWidth*devicePixelRatio;canvas.height=canvas.clientHeight*devicePixelRatio;}window.addEventListener('resize',resizeCanvas);resizeCanvas();
+    async function start(){if(ctx)return;try{stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});}catch(e){alert('Mic error: '+e.message);return;}ctx=new (window.AudioContext||window.webkitAudioContext)();an=ctx.createAnalyser();an.fftSize=2048;data=new Float32Array(an.fftSize);src=ctx.createMediaStreamSource(stream);src.connect(an);statusEl.textContent='Status: listening';tick();}
+    function stop(){if(raf)cancelAnimationFrame(raf);if(src)src.disconnect();if(an)an.disconnect();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}if(ctx){ctx.close();ctx=null;}an=null;src=null;data=null;statusEl.textContent='Status: stopped';noteEl.textContent='--';freqEl.textContent='-- Hz';centsEl.textContent='-- cents';needle.style.left='50%';ctx2d.clearRect(0,0,canvas.width,canvas.height);}
+    function drawWave(buf){const w=canvas.width,h=canvas.height;ctx2d.clearRect(0,0,w,h);ctx2d.lineWidth=1.5*devicePixelRatio;ctx2d.beginPath();const step=Math.floor(buf.length/w);for(let i=0;i<w;i++){const v=buf[i*step]||0;const y=(1-(v+1)/2)*h;if(i===0)ctx2d.moveTo(i,y);else ctx2d.lineTo(i,y);}ctx2d.strokeStyle='rgba(200,230,240,0.9)';ctx2d.stroke();}
+    function tick(){an.getFloatTimeDomainData(data);const sr=ctx.sampleRate;const f=autoCorrelate(data,sr);if(f!==-1){const note=frequencyToNote(f);noteEl.textContent=note.name;freqEl.textContent=f.toFixed(1)+' Hz';centsEl.textContent=(note.cents>=0?'+':'')+note.cents+' cents';const percent=50+(note.cents/50)*50;needle.style.left=percent+'%';}else{noteEl.textContent='--';freqEl.textContent='-- Hz';centsEl.textContent='-- cents';needle.style.left='50%';}drawWave(data);raf=requestAnimationFrame(tick);}
+    startBtn.addEventListener('click',start);stopBtn.addEventListener('click',stop);
   </script>
 </body>
 </html>
